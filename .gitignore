@@ -7,3 +7,6 @@ out/
 .DS_Store
 *.zip
 dist/
+.project
+.vscode/
+.classpath
