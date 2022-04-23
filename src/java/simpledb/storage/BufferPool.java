@@ -1,14 +1,12 @@
 package simpledb.storage;
 
-import simpledb.common.Database;
-import simpledb.common.Permissions;
-import simpledb.common.DbException;
-import simpledb.common.DeadlockException;
+import simpledb.common.*;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.*;
 
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -32,6 +30,9 @@ public class BufferPool {
     other classes. BufferPool should use the numPages argument to the
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
+    private Integer numPages;
+
+    private Map<PageId, Page> bufferPool;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -39,7 +40,8 @@ public class BufferPool {
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
-        // some code goes here
+        this.numPages = numPages;
+        this.bufferPool = new HashMap<>();
     }
     
     public static int getPageSize() {
@@ -73,8 +75,19 @@ public class BufferPool {
      */
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+        if (!bufferPool.containsKey(pid)){
+            Catalog catalog = Database.getCatalog();
+            DbFile dbFile = catalog.getDatabaseFile(pid.getTableId());
+            if (dbFile == null){
+                throw new DbException("BufferPool, getPage: no such page with pid " + pid);
+            }
+            Page page = dbFile.readPage(pid);
+            if (page == null){
+                throw new DbException("BufferPool, getPage: no such page with pid " + pid);
+            }
+            bufferPool.put(pid, page);
+        }
+        return bufferPool.get(pid);
     }
 
     /**
