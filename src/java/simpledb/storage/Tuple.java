@@ -17,7 +17,7 @@ public class Tuple implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private TupleDesc tupleDesc;
-    private Field[] fields;
+    private List<Field> fields;
     private RecordId recordId;
 
     /**
@@ -29,7 +29,7 @@ public class Tuple implements Serializable {
      */
     public Tuple(TupleDesc td) {
         this.tupleDesc = td;
-        this.fields = new Field[td.numFields()];
+        this.fields = new ArrayList<>();
     }
 
     /**
@@ -66,7 +66,7 @@ public class Tuple implements Serializable {
      *            new value for the field.
      */
     public void setField(int i, Field f) {
-        this.fields[i] = f;
+        this.fields.add(i, f);
     }
 
     /**
@@ -76,7 +76,7 @@ public class Tuple implements Serializable {
      *            field index to return. Must be a valid index.
      */
     public Field getField(int i) {
-       return this.fields[i];
+       return this.fields.get(i);
     }
 
     /**
@@ -107,7 +107,7 @@ public class Tuple implements Serializable {
      * */
     public Iterator<Field> fields()
     {
-        return Arrays.stream(fields).iterator();
+        return fields.iterator();
     }
 
     /**
