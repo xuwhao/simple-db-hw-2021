@@ -11,3 +11,4 @@ dist/
 .vscode/
 .classpath
 data/
+src/java/META-INF/

@@ -10,6 +10,12 @@ import simpledb.common.Database;
  *
  */
 public class SimpleDbTestBase {
+
+	public final String FILE_NAME = "file";
+	public final String TXT_FILE_PATH = "/root/src/simple-db-hw-2021/data/" + FILE_NAME + ".txt";
+
+	public final String DAT_FILE_PATH = "/root/src/simple-db-hw-2021/data/" + FILE_NAME + ".dat";
+
 	/**
 	 * Reset the database before each test is run.
 	 */
