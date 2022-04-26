@@ -76,7 +76,8 @@ public class HeapFile implements DbFile {
         byte data[] = new byte[BufferPool.getPageSize()];
         try {
             raf = new RandomAccessFile(this.file, "r");
-            int n = raf.read(data, pid.getPageNumber(), data.length);
+            raf.seek(pid.getPageNumber());
+            int n = raf.read(data, 0, data.length);
             if (n  == -1){
                 throw new IOException("read page failed, reach the end of the file!");
             }

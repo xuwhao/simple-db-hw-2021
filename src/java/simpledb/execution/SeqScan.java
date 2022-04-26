@@ -1,6 +1,7 @@
 package simpledb.execution;
 
 import simpledb.common.Database;
+import simpledb.index.BTreeFile;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 import simpledb.common.Type;
@@ -20,58 +21,74 @@ public class SeqScan implements OpIterator {
 
     private static final long serialVersionUID = 1L;
 
+    private TransactionId transactionId;
+    private int tableid;
+    private String tableAlias;
+    private transient DbFileIterator it;
+    private boolean opened;
+    private TupleDesc tupleDesc;
+    private String tableName;
+
     /**
      * Creates a sequential scan over the specified table as a part of the
      * specified transaction.
      *
-     * @param tid
-     *            The transaction this scan is running as a part of.
-     * @param tableid
-     *            the table to scan.
-     * @param tableAlias
-     *            the alias of this table (needed by the parser); the returned
-     *            tupleDesc should have fields with name tableAlias.fieldName
-     *            (note: this class is not responsible for handling a case where
-     *            tableAlias or fieldName are null. It shouldn't crash if they
-     *            are, but the resulting name can be null.fieldName,
-     *            tableAlias.null, or null.null).
+     * @param tid        The transaction this scan is running as a part of.
+     * @param tableid    the table to scan.
+     * @param tableAlias the alias of this table (needed by the parser); the returned
+     *                   tupleDesc should have fields with name tableAlias.fieldName
+     *                   (note: this class is not responsible for handling a case where
+     *                   tableAlias or fieldName are null. It shouldn't crash if they
+     *                   are, but the resulting name can be null.fieldName,
+     *                   tableAlias.null, or null.null).
      */
     public SeqScan(TransactionId tid, int tableid, String tableAlias) {
-        // some code goes here
+        this.transactionId = tid;
+        reset(tableid, tableAlias);
     }
 
     /**
-     * @return
-     *       return the table name of the table the operator scans. This should
-     *       be the actual name of the table in the catalog of the database
-     * */
+     * @return return the table name of the table the operator scans. This should
+     * be the actual name of the table in the catalog of the database
+     */
     public String getTableName() {
-        return null;
+        return this.tableName;
     }
 
     /**
      * @return Return the alias of the table this operator scans.
-     * */
-    public String getAlias()
-    {
-        // some code goes here
-        return null;
+     */
+    public String getAlias() {
+        return this.tableAlias;
     }
 
     /**
      * Reset the tableid, and tableAlias of this operator.
-     * @param tableid
-     *            the table to scan.
-     * @param tableAlias
-     *            the alias of this table (needed by the parser); the returned
-     *            tupleDesc should have fields with name tableAlias.fieldName
-     *            (note: this class is not responsible for handling a case where
-     *            tableAlias or fieldName are null. It shouldn't crash if they
-     *            are, but the resulting name can be null.fieldName,
-     *            tableAlias.null, or null.null).
+     *
+     * @param tableid    the table to scan.
+     * @param tableAlias the alias of this table (needed by the parser); the returned
+     *                   tupleDesc should have fields with name tableAlias.fieldName
+     *                   (note: this class is not responsible for handling a case where
+     *                   tableAlias or fieldName are null. It shouldn't crash if they
+     *                   are, but the resulting name can be null.fieldName,
+     *                   tableAlias.null, or null.null).
      */
     public void reset(int tableid, String tableAlias) {
-        // some code goes here
+        this.tableid = tableid;
+        this.tableAlias = tableAlias;
+        this.opened = false;
+        this.tableName = Database.getCatalog().getTableName(this.tableid);
+        this.it = Database.getCatalog().getDatabaseFile(tableid).iterator(transactionId);
+        this.tupleDesc = Database.getCatalog().getTupleDesc(tableid);
+        String[] newNames = new String[this.tupleDesc.numFields()];
+        Type[] newTypes = new Type[this.tupleDesc.numFields()];
+        for (int i = 0; i < this.tupleDesc.numFields(); i++) {
+            String name = this.tupleDesc.getFieldName(i);
+            Type t = this.tupleDesc.getFieldType(i);
+            newNames[i] = tableAlias + "." + name;
+            newTypes[i] = t;
+        }
+        this.tupleDesc = new TupleDesc(newTypes, newNames);
     }
 
     public SeqScan(TransactionId tid, int tableId) {
@@ -79,7 +96,11 @@ public class SeqScan implements OpIterator {
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        // some code goes here
+        if (this.opened) {
+            throw new DbException("double open on SeqScan OpIterator.");
+        }
+        it.open();
+        opened = true;
     }
 
     /**
@@ -90,30 +111,35 @@ public class SeqScan implements OpIterator {
      * (e.g., "alias.fieldName").
      *
      * @return the TupleDesc with field names from the underlying HeapFile,
-     *         prefixed with the tableAlias string from the constructor.
+     * prefixed with the tableAlias string from the constructor.
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return this.tupleDesc;
     }
 
     public boolean hasNext() throws TransactionAbortedException, DbException {
-        // some code goes here
-        return false;
+        if (!opened) {
+            throw new IllegalStateException("SeqScan: iterator is closed");
+        }
+        return it.hasNext();
     }
 
     public Tuple next() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+        if (!opened) {
+            throw new IllegalStateException("SeqScan: iterator is closed");
+        }
+        return it.next();
     }
 
     public void close() {
-        // some code goes here
+        it.close();
+        opened = false;
     }
 
     public void rewind() throws DbException, NoSuchElementException,
             TransactionAbortedException {
-        // some code goes here
+        close();
+        open();
     }
 }
