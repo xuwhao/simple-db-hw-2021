@@ -17,21 +17,21 @@ import java.util.*;
  * size, and the file is simply a collection of those pages. HeapFile works
  * closely with HeapPage. The format of HeapPages is described in the HeapPage
  * constructor.
- * 
- * @see HeapPage#HeapPage
+ *
  * @author Sam Madden
+ * @see HeapPage#HeapPage
  */
 public class HeapFile implements DbFile {
 
     private File file;
 
     private TupleDesc tupleDesc;
+
     /**
      * Constructs a heap file backed by the specified file.
-     * 
-     * @param f
-     *            the file that stores the on-disk backing store for this heap
-     *            file.
+     *
+     * @param f the file that stores the on-disk backing store for this heap
+     *          file.
      */
     public HeapFile(File f, TupleDesc td) {
         this.file = f;
@@ -40,7 +40,7 @@ public class HeapFile implements DbFile {
 
     /**
      * Returns the File backing this HeapFile on disk.
-     * 
+     *
      * @return the File backing this HeapFile on disk.
      */
     public File getFile() {
@@ -53,7 +53,7 @@ public class HeapFile implements DbFile {
      * HeapFile has a "unique id," and that you always return the same value for
      * a particular HeapFile. We suggest hashing the absolute file name of the
      * file underlying the heapfile, i.e. f.getAbsoluteFile().hashCode().
-     * 
+     *
      * @return an ID uniquely identifying this HeapFile.
      */
     public int getId() {
@@ -62,7 +62,7 @@ public class HeapFile implements DbFile {
 
     /**
      * Returns the TupleDesc of the table stored in this DbFile.
-     * 
+     *
      * @return TupleDesc of this DbFile.
      */
     public TupleDesc getTupleDesc() {
@@ -78,7 +78,7 @@ public class HeapFile implements DbFile {
             raf = new RandomAccessFile(this.file, "r");
             raf.seek(pid.getPageNumber());
             int n = raf.read(data, 0, data.length);
-            if (n  == -1){
+            if (n == -1) {
                 throw new IOException("read page failed, reach the end of the file!");
             }
             heapPage = new HeapPage((HeapPageId) pid, data);
@@ -99,7 +99,7 @@ public class HeapFile implements DbFile {
      * Returns the number of pages in this HeapFile.
      */
     public int numPages() {
-        return (int)Math.ceil(this.file.length() * 1.0/ BufferPool.getPageSize());
+        return (int) Math.ceil(this.file.length() * 1.0 / BufferPool.getPageSize());
     }
 
     // see DbFile.java for javadocs
@@ -135,7 +135,8 @@ class HeapFileIterator extends AbstractDbFileIterator {
 
     /**
      * Constructor for this iterator
-     * @param f - the HeapFile containing the tuples
+     *
+     * @param f   - the HeapFile containing the tuples
      * @param tid - the transaction id
      */
     public HeapFileIterator(HeapFile f, TransactionId tid) {
@@ -160,29 +161,32 @@ class HeapFileIterator extends AbstractDbFileIterator {
      */
     @Override
     protected Tuple readNext() throws TransactionAbortedException, DbException {
-        if (it != null && !it.hasNext())
+        if (it != null && !it.hasNext()) {
             it = null;
-
+        }
         while (it == null && heapPage != null) {
-            HeapPageId nextp = null;
+            // 下一页在文件中偏移量
             int pgNo = heapPage.pid.getPageNumber() + BufferPool.getPageSize();
-            int pgNum = (int)Math.ceil(pgNo * 1.0/ BufferPool.getPageSize()) + 1;
-            if(pgNum <= this.f.numPages()){
-                nextp = new HeapPageId(heapPage.pid.getTableId(), pgNo);
-            }
-            if(nextp == null) {
+            // 下一页是第几页
+            int pgNum = (int) Math.ceil(pgNo * 1.0 / BufferPool.getPageSize()) + 1;
+            // 判断下一页有没有超出文件范围，超过了则遍历结束
+            if (pgNum > this.f.numPages()) {
                 heapPage = null;
+                break;
             }
-            else {
-                heapPage = (HeapPage) Database.getBufferPool().getPage(tid, nextp, Permissions.READ_WRITE);
-                it = heapPage.iterator();
-                if (!it.hasNext())
-                    it = null;
+            HeapPageId nextPageId = new HeapPageId(heapPage.pid.getTableId(), pgNo);
+            heapPage = (HeapPage) Database.getBufferPool().getPage(tid, nextPageId, Permissions.READ_WRITE);
+            it = heapPage.iterator();
+            // 有下一个 tuple，不用继续找下一个 Page 了
+            if (it != null && it.hasNext()) {
+                break;
             }
+            it = null;
         }
 
-        if (it == null)
+        if (it == null) {
             return null;
+        }
         return it.next();
     }
 
