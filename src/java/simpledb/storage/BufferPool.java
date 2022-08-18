@@ -79,7 +79,7 @@ public class BufferPool {
             Catalog catalog = Database.getCatalog();
             DbFile dbFile = catalog.getDatabaseFile(pid.getTableId());
             if (dbFile == null){
-                throw new DbException("BufferPool, getPage: no such page with pid " + pid);
+                throw new DbException("BufferPool, getPage: no such dbFile with tid " + pid.getTableId());
             }
             Page page = dbFile.readPage(pid);
             if (page == null){
