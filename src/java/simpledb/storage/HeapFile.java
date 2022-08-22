@@ -23,9 +23,9 @@ import java.util.*;
  */
 public class HeapFile implements DbFile {
 
-    private File file;
+    private final File file;
 
-    private TupleDesc tupleDesc;
+    private final TupleDesc tupleDesc;
 
     /**
      * Constructs a heap file backed by the specified file.
@@ -71,11 +71,9 @@ public class HeapFile implements DbFile {
 
     // see DbFile.java for javadocs
     public Page readPage(PageId pid) {
-        RandomAccessFile raf = null;
-        HeapPage heapPage = null;
-        byte data[] = new byte[BufferPool.getPageSize()];
-        try {
-            raf = new RandomAccessFile(this.file, "r");
+        HeapPage heapPage;
+        byte[] data = new byte[BufferPool.getPageSize()];
+        try (RandomAccessFile raf = new RandomAccessFile(this.file, "r")) {
             raf.seek(pid.getPageNumber());
             int n = raf.read(data, 0, data.length);
             if (n == -1) {
@@ -85,7 +83,6 @@ public class HeapFile implements DbFile {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
         return heapPage;
     }
 

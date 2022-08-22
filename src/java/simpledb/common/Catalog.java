@@ -50,34 +50,25 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        int idx = -1;
 
         for (int i = 0; i < dbFiles.size(); i++) {
             if(dbFiles.get(i).getId() == file.getId()){
-                idx = i;
+                this.tableIds.set(i, file.getId());
+                this.dbFiles.set(i, file);
+                this.names.set(i, name);
+                this.pkeyFields.set(i, pkeyField);
+                return;
             }
-        }
-
-        if (idx >= 0){
-            this.tableIds.add(idx, file.getId());
-            this.dbFiles.add(idx, file);
-            this.names.add(idx, name);
-            this.pkeyFields.add(idx, pkeyField);
-            return;
         }
 
         for (int i = 0; i < names.size(); i++) {
             if(name!=null && name.equals(names.get(i))){
-                idx = i;
+                this.tableIds.set(i, file.getId());
+                this.dbFiles.set(i, file);
+                this.names.set(i, name);
+                this.pkeyFields.set(i, pkeyField);
+                return;
             }
-        }
-
-        if(idx>=0){
-            this.tableIds.add(idx, file.getId());
-            this.dbFiles.add(idx, file);
-            this.names.add(idx, name);
-            this.pkeyFields.add(idx, pkeyField);
-            return;
         }
 
         this.tableIds.add(file.getId());
