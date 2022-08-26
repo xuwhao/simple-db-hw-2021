@@ -11,10 +11,9 @@ import simpledb.common.Database;
  */
 public class SimpleDbTestBase {
 
-	public final String FILE_NAME = "file";
-	public final String TXT_FILE_PATH = "/root/src/simple-db-hw-2021/data/" + FILE_NAME + ".txt";
+	public static final String TXT_FILE_PREFIX = "/root/src/simple-db-hw-2021/data/";
 
-	public final String DAT_FILE_PATH = "/root/src/simple-db-hw-2021/data/" + FILE_NAME + ".dat";
+	public static final String DAT_FILE_PREFIX = "/root/src/simple-db-hw-2021/data/";
 
 	/**
 	 * Reset the database before each test is run.
@@ -22,5 +21,14 @@ public class SimpleDbTestBase {
 	@Before	public void setUp() throws Exception {					
 		Database.reset();
 	}
+
+	public static String getTxtFilePath(final String fileName){
+		return TXT_FILE_PREFIX + fileName + ".txt";
+	}
+
+	public static String getDATFilePath(final String fileName){
+		return DAT_FILE_PREFIX + fileName + ".dat";
+	}
+
 	
 }
