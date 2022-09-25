@@ -8,7 +8,9 @@ import simpledb.index.BTreeRootPtrPage;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
+import javax.xml.crypto.Data;
 import java.io.*;
+import java.nio.Buffer;
 import java.util.*;
 
 /**
@@ -74,14 +76,14 @@ public class HeapFile implements DbFile {
         HeapPage heapPage;
         byte[] data = new byte[BufferPool.getPageSize()];
         try (RandomAccessFile raf = new RandomAccessFile(this.file, "r")) {
-            raf.seek(pid.getPageNumber());
+            raf.seek((long) pid.getPageNumber() * BufferPool.getPageSize());
             int n = raf.read(data, 0, data.length);
             if (n == -1) {
                 throw new IOException("read page failed, reach the end of the file!");
             }
             heapPage = new HeapPage((HeapPageId) pid, data);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
         return heapPage;
     }
@@ -89,7 +91,11 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public void writePage(Page page) throws IOException {
         // some code goes here
-        // not necessary for lab1
+        // lab2
+        RandomAccessFile rf = new RandomAccessFile(file, "rw");
+        rf.seek(page.getId().getPageNumber() * BufferPool.getPageSize());
+        rf.write(page.getPageData());
+        rf.close();
     }
 
     /**
@@ -103,16 +109,35 @@ public class HeapFile implements DbFile {
     public List<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        return null;
-        // not necessary for lab1
+        // lab2
+        int pgNum = 0;
+        HeapPage heapPage = null;
+
+        while (pgNum < numPages()) {
+            heapPage = (HeapPage) Database.getBufferPool().getPage(tid, new HeapPageId(getId(), pgNum), Permissions.READ_WRITE);
+            if (heapPage.getNumEmptySlots() > 0) {
+                break;
+            }
+            pgNum++;
+        }
+        if (pgNum == numPages()) {
+            heapPage = new HeapPage(new HeapPageId(getId(), pgNum), HeapPage.createEmptyPageData());
+        }
+
+        heapPage.insertTuple(t);
+        writePage(heapPage);
+        return Arrays.asList(heapPage);
     }
 
     // see DbFile.java for javadocs
     public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
         // some code goes here
-        return null;
-        // not necessary for lab1
+        // lab2
+        HeapPage heapPage = (HeapPage) Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(), Permissions.READ_WRITE);
+        heapPage.deleteTuple(t);
+//        writePage(heapPage);
+        return new ArrayList<>(Arrays.asList(heapPage));
     }
 
     // see DbFile.java for javadocs
@@ -158,16 +183,15 @@ class HeapFileIterator extends AbstractDbFileIterator {
      */
     @Override
     protected Tuple readNext() throws TransactionAbortedException, DbException {
+        // 到当前页的最后一个了
         if (it != null && !it.hasNext()) {
-            it = null;
+            it = null;  // 进入后面的 while 循环，找下一页
         }
         while (it == null && heapPage != null) {
             // 下一页在文件中偏移量
-            int pgNo = heapPage.pid.getPageNumber() + BufferPool.getPageSize();
-            // 下一页是第几页
-            int pgNum = (int) Math.ceil(pgNo * 1.0 / BufferPool.getPageSize()) + 1;
+            int pgNo = heapPage.pid.getPageNumber() + 1;
             // 判断下一页有没有超出文件范围，超过了则遍历结束
-            if (pgNum > this.f.numPages()) {
+            if (pgNo >= this.f.numPages()) {
                 heapPage = null;
                 break;
             }

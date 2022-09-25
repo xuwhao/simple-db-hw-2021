@@ -42,7 +42,7 @@ public class PrintCmdTest extends SimpleDbTestBase {
         List<Tester> testerList = new ArrayList<>();
         List<Future<?>> futures = new ArrayList<>();
         int minRow = 5500;
-        int maxRow = 6000, maxCol = 10;
+        int maxRow = 5501, maxCol = 10;
         for (int i = minRow; i <= maxRow; i++) {
             for (int j = 1; j <= maxCol; j++) {
                 testerList.add(new Tester(new File(getTxtFilePath(String.format("%s-%d-%d", DATA_FILE_NAME, i, j))),
