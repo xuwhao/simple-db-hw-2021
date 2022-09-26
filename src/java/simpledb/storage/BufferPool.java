@@ -56,17 +56,26 @@ public class BufferPool {
     	BufferPool.pageSize = DEFAULT_PAGE_SIZE;
     }
 
-    private void setPage(PageId pid, Page page) throws DbException {
+    private void addPage(PageId pid, Page page) throws DbException {
         if(this.numPages == cacheMap.size()){
             evictPage();
         }
+        lruList.addFirst(pid);
         cacheMap.put(pid, page);
+    }
+
+    private void promotePage(PageId pid){
+        lruList.remove(pid);
         lruList.addFirst(pid);
     }
 
+    private void updatePage(PageId pid, Page page) throws DbException{
+        promotePage(pid);
+        cacheMap.put(pid, page);
+    }
+
     private Page fetchPage(PageId pid){
-        lruList.remove(pid);
-        lruList.addFirst(pid);
+        promotePage(pid);
         return cacheMap.get(pid);
     }
 
@@ -97,7 +106,10 @@ public class BufferPool {
             if (page == null){
                 throw new DbException("BufferPool, getPage: no such page with pid " + pid);
             }
-            setPage(pid, page);
+            addPage(pid, page);
+        }
+        if (cacheMap.size() != lruList.size()){
+            throw new RuntimeException("not match");
         }
         return fetchPage(pid);
     }
@@ -145,6 +157,14 @@ public class BufferPool {
         // not necessary for lab1|lab2
     }
 
+    public int getMapSize(){
+        return cacheMap.size();
+    }
+
+    public int getListSize(){
+        return lruList.size();
+    }
+
     /**
      * Add a tuple to the specified table on behalf of transaction tid.  Will
      * acquire a write lock on the page the tuple is added to and any other 
@@ -168,7 +188,11 @@ public class BufferPool {
         List<Page> pageList = dbFile.insertTuple(tid, t);
         for (Page p : pageList) {
             p.markDirty(true, tid);
-            setPage(p.getId(), p);
+            if (cacheMap.containsKey(p.getId())){
+                updatePage(p.getId(), p);
+            }else{
+                addPage(p.getId(), p);
+            }
         }
     }
 
@@ -194,7 +218,11 @@ public class BufferPool {
         List<Page> pageList = dbFile.deleteTuple(tid, t);
         for (Page p : pageList) {
             p.markDirty(true, tid);
-            setPage(p.getId(), p);
+            if (cacheMap.containsKey(p.getId())){
+                updatePage(p.getId(), p);
+            }else{
+                addPage(p.getId(), p);
+            }
         }
     }
 
