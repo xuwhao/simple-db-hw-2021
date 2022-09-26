@@ -23,7 +23,9 @@ import simpledb.*;
         HeapFileWriteTest.class,
         BufferPoolWriteTest.class,
         // Exercise 4
-        InsertTest.class
+        InsertTest.class,
+        simpledb.systemtest.InsertTest.class,
+        simpledb.systemtest.DeleteTest.class
 })
 public class Lab2Test {
 

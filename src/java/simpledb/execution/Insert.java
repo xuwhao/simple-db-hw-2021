@@ -20,21 +20,17 @@ public class Insert extends Operator {
     private final TransactionId tid;
     private OpIterator child;
     private final int tableId;
-
     private final TupleDesc td;
+    private boolean inserted;
 
     /**
      * Constructor.
      *
-     * @param t
-     *            The transaction running the insert.
-     * @param child
-     *            The child operator from which to read tuples to be inserted.
-     * @param tableId
-     *            The table in which to insert tuples.
-     * @throws DbException
-     *             if TupleDesc of child differs from table into which we are to
-     *             insert.
+     * @param t       The transaction running the insert.
+     * @param child   The child operator from which to read tuples to be inserted.
+     * @param tableId The table in which to insert tuples.
+     * @throws DbException if TupleDesc of child differs from table into which we are to
+     *                     insert.
      */
     public Insert(TransactionId t, OpIterator child, int tableId)
             throws DbException {
@@ -76,15 +72,18 @@ public class Insert extends Operator {
      * duplicate before inserting it.
      *
      * @return A 1-field tuple containing the number of inserted records, or
-     *         null if called more than once.
+     * null if called more than once.
      * @see Database#getBufferPool
      * @see BufferPool#insertTuple
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
         BufferPool bufferPool = Database.getBufferPool();
+        if(inserted){
+            return null;
+        }
         int cnt = 0;
-        while(child.hasNext()){
+        while (child.hasNext()) {
             Tuple t = child.next();
             try {
                 bufferPool.insertTuple(tid, tableId, t);
@@ -93,6 +92,7 @@ public class Insert extends Operator {
                 throw new RuntimeException(e);
             }
         }
+        inserted = true;
         Tuple result = new Tuple(td);
         result.setField(0, new IntField(cnt));
         return result;
@@ -107,7 +107,7 @@ public class Insert extends Operator {
     @Override
     public void setChildren(OpIterator[] children) {
         // some code goes here
-        if (child != children[0]){
+        if (child != children[0]) {
             child = children[0];
         }
     }
