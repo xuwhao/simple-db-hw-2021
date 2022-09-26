@@ -1,6 +1,5 @@
 package simpledb.mytest;
 
-import org.junit.Before;
 import org.junit.Test;
 import simpledb.SimpleDb;
 import simpledb.common.Database;
@@ -21,7 +20,7 @@ import java.util.concurrent.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class PrintCmdTest extends SimpleDbTestBase {
+public class MyLab1Test extends SimpleDbTestBase {
 
     private static final String DATA_FILE_NAME = "printCmdTest";
 
